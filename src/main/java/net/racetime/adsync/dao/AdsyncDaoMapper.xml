@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="net.racetime.adsync.dao.AdsyncDaoMapper">
+    <select id="getMaterial" resultType="java.lang.String">
+        SELECT
+            IFNULL(materiel_url, '') AS materiel_url
+        FROM
+            `ad_material`
+        WHERE
+            review_type = 1;
+  </select>
+    <select id="getADslotConfig" resultType="java.util.Map">
+--      第三方标识ID,第三方账号,请求URL,百度APP_id,百度广告位ID,主版本,次版本,最小版本
+        SELECT
+            IFNULL(t.channel_id, '') AS third_id,
+            IFNULL(t1.username, '') AS account,
+            IFNULL(t.request_url, '') AS request_url,
+            IFNULL(t.appsid, '') AS app_id,
+            IFNULL(t2.thrid_position_id, '') AS adslot_id,
+            IFNULL(t.app_version_major, 0) AS app_version_major,
+            IFNULL(t.app_version_minor, 0) AS app_version_minor,
+            IFNULL(t.app_version_micro, 0) AS app_version_micro,
+            IFNULL(t2.thrid_position_id, '') AS ssp_id
+        FROM
+            ad_app t,
+            admins t1,
+            ad_position t2
+        WHERE
+            t.user_id = t1.id
+        AND t.id = t2.app_id
+        ORDER BY
+            ssp_id
+    </select>
+    <select id="bindingDevice" resultType="java.util.Map">
+        SELECT
+            IFNULL(std.third_device_id, '') AS third_device_id,
+            IFNULL(abd.bd_device_id, '') AS bd_device_id
+        FROM
+            `ad_third_device` std,
+            ad_bd_device abd
+        WHERE
+            std.bd_device_id = abd.id
+    </select>
+    <select id="standbyDevice" resultType="java.util.Map">
+        SELECT
+            bd_device_id AS bd_device_id
+        FROM
+            `ad_bd_device`
+        WHERE
+            id NOT IN (
+                SELECT
+                    bd_device_id
+                FROM
+                    ad_third_device
+            )
+    </select>
+    <select id="getBdDeviceId" resultType="java.lang.String">
+        SELECT
+            id
+        FROM
+            `ad_bd_device`
+        WHERE
+            bd_device_id = #{bd_device_id};
+    </select>
+    <update id="notmatchDevice">
+        <selectKey keyProperty="count" resultType="int" order="BEFORE">
+            select count(1) from ad_third_device where third_device_id = #{third_device_id}
+        </selectKey>
+        <if test="count == 0">
+          INSERT INTO ad_third_device (
+            bd_device_id,
+            third_device_id,
+            createtime
+            )
+          VALUES (
+            #{bd_device_id}, #{third_device_id},NOW()
+            )
+
+
+        </if>
+        <if test="count>0">
+            select count(1) from ad_third_device;
+        </if>
+    </update>
+    <select id="getAdvertisementMateriel" resultType="java.util.Map">
+        SELECT
+            IFNULL(adid, '') AS adid,
+            IFNULL(material, '') AS materialId,
+            IFNULL(week_and_hour, '') AS week_and_hour
+        FROM
+            `ad_serving`
+        WHERE
+            `status` = 1
+              AND  sdate &lt;=  CURDATE()
+              AND edate &gt;=  CURDATE()
+    </select>
+    <select id="getAllMateriel" resultType="java.util.Map">
+        SELECT
+            IFNULL(id, '') AS materialId,
+            IFNULL(picture_name, '') AS ad_title,
+            IFNULL(ad_typ, '') AS ad_type,
+            IFNULL(materiel_url, '') AS ad_url,
+            video_duration AS video_duration,
+            IFNULL('', 'description') AS description,
+            ad_width AS ad_width,
+            ad_height AS ad_height,
+            ad_size AS ad_size
+        FROM
+            `ad_material`
+        WHERE
+            review_type = 1
+
+    </select>
+</mapper>
